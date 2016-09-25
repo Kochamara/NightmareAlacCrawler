@@ -23,8 +23,8 @@ namespace NightmareAlacCrawler.Models
 
     public enum FilterType
     {
-        Title = 0,
-        Performer = 1,
-        Album = 2
+        Title,
+        Performer,
+        Album
     }
 }

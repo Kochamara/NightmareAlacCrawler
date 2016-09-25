@@ -18,7 +18,7 @@ namespace NightmareAlacCrawler.Services
             _historyManager = TrackHistoryManager.GetInstance();
         }
 
-        public List<Track> RecursivelyCollectTracks(string directoryPath, bool ignoreHistory, bool testMode)
+        public List<Track> RecursivelyCollectTracks(string directoryPath, bool testMode)
         {
             var tracks = new List<Track>();
 
@@ -26,15 +26,11 @@ namespace NightmareAlacCrawler.Services
             {
                 foreach (string filePath in Directory.GetFiles(directoryPath))
                 {
-                    var file = GetTrackModelIfValid(filePath, ignoreHistory);
+                    var file = GetTrackModelIfValid(filePath);
                     if (file != null)
                     {
                         tracks.Add(file);
-
-                        if (!ignoreHistory)
-                        {
-                            _historyManager.AddPreviouslyCopiedTrackToArchive(file, false);
-                        }
+                        _historyManager.AddPreviouslyCopiedTrackToArchive(file);
                     }
                 }
 
@@ -44,7 +40,7 @@ namespace NightmareAlacCrawler.Services
                     // also not like we're going to overshoot it by THAT much.
                     if (!testMode || tracks.Count() < NumberOfTracksToCollectInTestMode)
                     {
-                        var newTracks = RecursivelyCollectTracks(subDirectoryPath, ignoreHistory, testMode);
+                        var newTracks = RecursivelyCollectTracks(subDirectoryPath, testMode);
                         tracks.AddRange(newTracks);
                     }
                 }
@@ -58,7 +54,7 @@ namespace NightmareAlacCrawler.Services
             return tracks;
         }
 
-        private Track GetTrackModelIfValid(string filePath, bool ignoreHistory)
+        private Track GetTrackModelIfValid(string filePath)
         {
             Track validTrack = null;
 
@@ -67,8 +63,6 @@ namespace NightmareAlacCrawler.Services
                 var fileMetadata = TagLib.File.Create(filePath);
                 if ((fileMetadata != null) && (fileMetadata.Tag != null) && (fileMetadata.Properties != null) && !String.IsNullOrWhiteSpace(fileMetadata.Properties.Description) && fileMetadata.Properties.Description.Contains(Constants.TargetFileEncoding))
                 {
-                    bool isValid = true;
-
                     var track = new Track()
                     {
                         Title = fileMetadata.Tag.Title,
@@ -77,20 +71,12 @@ namespace NightmareAlacCrawler.Services
                         FilePath = filePath,
                     };
 
-                    if (!_historyManager.IsTrackOnIgnoreList(track))
-                    {
-                        if (!ignoreHistory)
-                        {
-                            if (_historyManager.WasTrackPreviouslyCopied(track))
-                            {
-                                isValid = false;
-                            }
-                        }
+                    bool isIgnored = _historyManager.IsTrackOnIgnoreList(track);
+                    bool wasPreviouslyCopied = _historyManager.WasTrackPreviouslyCopied(track);
 
-                        if (isValid)
-                        {
-                            validTrack = track;
-                        }
+                    if (!isIgnored && !wasPreviouslyCopied)
+                    {
+                        validTrack = track;
                     }
                 }
             }

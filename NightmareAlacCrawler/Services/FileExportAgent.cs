@@ -4,12 +4,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NightmareAlacCrawler.Services
 {
     public class FileExportAgent
     {
+        public const bool ExportAllFilesToSameDirectory = true;
+
         public async static Task CopyTracksAsync(List<Track> tracksToCopy)
         {
             Console.WriteLine("Begining file copy...");
@@ -35,30 +38,34 @@ namespace NightmareAlacCrawler.Services
                     System.IO.Directory.CreateDirectory(Constants.ExportDirectoryPath);
                 }
 
-                string artistDirectory = Path.Combine(Constants.ExportDirectoryPath, track.Performer);
-                if (!System.IO.Directory.Exists(artistDirectory))
-                {
-                    System.IO.Directory.CreateDirectory(artistDirectory);
-                }
+                string destinationPath = string.Empty;
 
-                string albumDirectory = Path.Combine(artistDirectory, track.Album);
-                if (!System.IO.Directory.Exists(albumDirectory))
+                if (ExportAllFilesToSameDirectory)
                 {
-                    System.IO.Directory.CreateDirectory(albumDirectory);
+                    var originalFile = new FileInfo(track.FilePath);
+                    var longFileName = RemoveSpecialCharacters(track.Performer + " " + track.Album + " ") + originalFile.Name;
+                    destinationPath = Path.Combine(Constants.ExportDirectoryPath, longFileName);
                 }
+                else
+                {
+                    string artistDirectory = Path.Combine(Constants.ExportDirectoryPath, RemoveSpecialCharacters(track.Performer));
+                    if (!System.IO.Directory.Exists(artistDirectory))
+                    {
+                        System.IO.Directory.CreateDirectory(artistDirectory);
+                    }
 
-                //TODO: This should use the original file name instead
-                string destinationPath = Path.Combine(albumDirectory, track.Title + "." + Constants.TargetFileExtension);
+                    string albumDirectory = Path.Combine(artistDirectory, RemoveSpecialCharacters(track.Album));
+                    if (!System.IO.Directory.Exists(albumDirectory))
+                    {
+                        System.IO.Directory.CreateDirectory(albumDirectory);
+                    }
+
+                    var originalFile = new FileInfo(track.FilePath);
+                    destinationPath = Path.Combine(albumDirectory, originalFile.Name);
+                }
+                
                 System.IO.File.Copy(track.FilePath, destinationPath, true);
-
-                //using (FileStream sourceStream = File.OpenRead(originalFilePath))
-                //{
-                //    using (FileStream destinationStream = File.Create(destinationFilePath))
-                //    {
-                //        await sourceStream.CopyToAsync(destinationStream);
-                //        success = true;
-                //    }
-                //}
+                success = true;
             }
             catch (Exception e)
             {
@@ -67,6 +74,11 @@ namespace NightmareAlacCrawler.Services
             }
 
             return success;
+        }
+
+        public static string RemoveSpecialCharacters(string str)
+        {
+            return Regex.Replace(str, "[^a-zA-Z0-9_. ]+", "", RegexOptions.Compiled);
         }
     }
 }

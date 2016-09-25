@@ -25,18 +25,18 @@ namespace NightmareAlacCrawler
 
                 while (!String.Equals(command, Constants.Commands.QuitCommand, StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine("Enter your command!");
+                    Console.WriteLine("\nEnter your command!");
                     command = Console.ReadLine().Trim();
 
                     if (command.Equals(Constants.Commands.PerformCopyCommand, StringComparison.OrdinalIgnoreCase))
                     {
-                        var tracksToCopy = discoveryUtility.RecursivelyCollectTracks(Constants.ParentDirectoryPath, false, false);
+                        var tracksToCopy = discoveryUtility.RecursivelyCollectTracks(Constants.ParentDirectoryPath, false);
                         historyManager.SaveArchive();
                         var task = FileExportAgent.CopyTracksAsync(tracksToCopy);
                     }
                     else if (command.Equals(Constants.Commands.PerformTestCopyCommand, StringComparison.OrdinalIgnoreCase))
                     {
-                        var tracksToCopy = discoveryUtility.RecursivelyCollectTracks(Constants.ParentDirectoryPath, false, true);
+                        var tracksToCopy = discoveryUtility.RecursivelyCollectTracks(Constants.ParentDirectoryPath, true);
                         historyManager.SaveArchive();
                         var task = FileExportAgent.CopyTracksAsync(tracksToCopy);
                     }
@@ -79,10 +79,14 @@ namespace NightmareAlacCrawler
                     else if (command.Equals(Constants.Commands.ClearHistoryCommand, StringComparison.OrdinalIgnoreCase))
                     {
                         historyManager.ClearPreviouslyRecordedTracks();
+                        historyManager.SaveArchive();
+                        Console.WriteLine("History of previously copied tracks has been cleared.");
                     }
                     else if (command.Equals(Constants.Commands.ClearFiltersCommand, StringComparison.OrdinalIgnoreCase))
                     {
                         historyManager.ClearPreviouslyEnteredFilters();
+                        historyManager.SaveArchive();
+                        Console.WriteLine("History of previously filtered out tracks has been cleared.");
                     }
                 }
             }
@@ -105,7 +109,7 @@ namespace NightmareAlacCrawler
             Console.WriteLine(Constants.Commands.ClearHistoryCommand + " - Clears the history of previously copied tracks");
             Console.WriteLine(Constants.Commands.ClearFiltersCommand + " - Clears the history of previously filtered out tracks");
             Console.WriteLine(Constants.Commands.QuitCommand + " - Escape the nightare");
-            Console.WriteLine("========================================================================================\n");
+            Console.WriteLine("========================================================================================");
         }
     }
 }
